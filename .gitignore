@@ -25,6 +25,9 @@ Thumbs.db
 # Debug APK
 *.apk
 
+# RustDesk
+rustdesk.exe
+
 # Temp files
 *.zip
 server_fix.zip
