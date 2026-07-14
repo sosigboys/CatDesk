@@ -1,0 +1,99 @@
+{
+  "name": "catdesk",
+  "version": "1.0.25",
+  "description": "CatDesk — удалённый рабочий стол. Без лимитов, свой сервер.",
+  "main": "main.js",
+  "author": "CatDesk",
+  "scripts": {
+    "start": "electron .",
+    "server": "node server.js",
+    "build": "electron-builder --win portable",
+    "build:nsis": "electron-builder --win nsis",
+    "build:dir": "electron-builder --win dir",
+    "build:linux": "electron-builder --linux rpm AppImage"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "ru.catdesk.app",
+    "productName": "CatDesk",
+    "directories": {
+      "output": "dist"
+    },
+    "asarUnpack": [],
+    "extraResources": [
+      {
+        "from": "input_helper.ps1",
+        "to": "input_helper.ps1"
+      }
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "splash.html",
+      "styles.css",
+      "config.json",
+      "input_helper.ps1",
+      "lib/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CatDesk",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "installerLanguages": ["ru", "en"],
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": false
+    },
+    "linux": {
+      "icon": "icon-256.png",
+      "target": [
+        "rpm",
+        "AppImage"
+      ],
+      "category": "Network",
+      "artifactName": "${productName}-${version}.${ext}",
+      "synopsis": "Удалённый рабочий стол (${version})"
+    },
+    "rpm": {
+      "depends": [
+        "libXScrnSaver",
+        "libXtst",
+        "libsecret-1"
+      ]
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}

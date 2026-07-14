@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+
+# Secrets & credentials
+.env
+config.php
+*.pfx
+database_mysql.sql
+s2107-a0278-firebase-adminsdk-fbsvc-*.json
+generate_vapid_keys.php
+quick_tickets_config.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug APK
+*.apk
+
+# Temp files
+*.zip
+server_fix.zip
+deploy.tar.gz
+*.asar.unpacked/
+temp_*/
+check_fresh/
+fix_quotes.js
+renderer-base.js
+
+# Version info - keep only template
+# config.example.json is included for reference
+config.json

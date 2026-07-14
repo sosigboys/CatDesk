@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss: http: https:; media-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:;">
+  <title>CatDesk</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Splash overlay (CSS-only, not a separate file) -->
+  <div id="splashOverlay" style="position:fixed;inset:0;z-index:9999;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Inter,sans-serif;transition:opacity 0.5s;opacity:1;">
+    <div style="position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,0.12) 0%,transparent 70%);animation:pulse-glow 3s ease-in-out infinite;"></div>
+    <div style="font-size:72px;animation:bounce 1.5s ease-in-out infinite;filter:drop-shadow(0 0 30px rgba(139,92,246,0.3));z-index:1;">🐱</div>
+    <div style="margin-top:16px;font-size:32px;font-weight:900;letter-spacing:-0.5px;background:linear-gradient(135deg,#3b82f6 0%,#8b5cf6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;z-index:1;">CatDesk</div>
+    <div style="margin-top:6px;font-size:13px;color:#94a3b8;z-index:1;">Удалённый рабочий стол</div>
+    <div style="margin-top:28px;width:160px;height:3px;background:#1e1e2e;border-radius:3px;overflow:hidden;z-index:1;"><div style="width:30%;height:100%;background:linear-gradient(90deg,#3b82f6,#8b5cf6);border-radius:3px;animation:loading 1.8s ease-in-out infinite;"></div></div>
+  </div>
+  <style>
+    @keyframes pulse-glow { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.2);opacity:1} }
+    @keyframes bounce { 0%,100%{transform:translateY(0)scale(1)} 15%{transform:translateY(-16px)scale(1.08)} 30%{transform:translateY(0)scale(1)} }
+    @keyframes loading { 0%{width:0%;margin-left:0} 50%{width:60%;margin-left:20%} 100%{width:0%;margin-left:100%} }
+  </style>
+  <div id="app">
+    <header id="header">
+      <div class="logo">
+        <span class="logo-cat">🐱</span>
+        <span>CatDesk</span>
+      </div>
+      <div class="header-right">
+        <div id="headerStatus" class="header-status"></div>
+        <button id="btnSettings" class="btn-settings" title="Настройки" onclick="document.getElementById('settingsOverlay').classList.remove('hidden'); document.getElementById('settingsServerUrl').value = (typeof SIGNALING_URL !== 'undefined' ? SIGNALING_URL : '')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN SCREEN -->
+    <main id="mainScreen" class="screen active">
+      <div class="main-scroll">
+        <!-- Remote address bar -->
+        <div class="remote-bar">
+          <input type="text" id="remoteIdInput" class="remote-input" placeholder="Введите кэт-ID" maxlength="6" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
+          <button id="btnConnectRemote" class="btn btn-primary">Подключиться</button>
+          <input type="password" id="remotePassword" class="remote-input remote-pass" placeholder="Пароль" maxlength="20">
+        </div>
+
+        <!-- My ID -->
+        <div class="my-id-row">
+          <span class="my-id-label">Ваш кэт-ID</span>
+          <span class="my-id-value" id="myIdDisplay">------</span>
+          <button id="btnCopyId" class="btn btn-ghost btn-sm" title="Копировать">📋</button>
+          <button id="btnStartHost" class="btn btn-primary btn-sm">Поделиться экраном</button>
+          <input type="password" id="hostPassword" class="remote-input host-pass" placeholder="Пароль доступа" maxlength="20">
+        </div>
+
+        <!-- Host status -->
+        <div id="hostStatusBar" class="status-bar hidden"></div>
+
+        <!-- News -->
+        <div class="info-block-card">
+          <div class="info-block-title">📰 Новости</div>
+          <div class="info-block-body" id="newsBlock">CatDesk — удалённый рабочий стол без лимитов. ГОСТ-шифрование, свой сервер.</div>
+        </div>
+
+        <!-- Recent sessions -->
+        <div class="info-block-card">
+          <div class="info-block-title">🕐 Недавние сеансы</div>
+          <div class="info-block-body" id="recentBlock">Нет недавних сеансов</div>
+          <div class="cat-mascot"><span class="cat-licking">🐱</span><span class="cat-sparkles">✨</span></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- View Screen -->
+    <main id="viewScreen" class="screen">
+      <div class="view-container" id="viewContainer">
+        <!-- Loading placeholder -->
+        <div id="videoLoading" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5;background:#0a0a0f;">
+          <div style="font-size:56px;animation:bounce 1.5s ease-in-out infinite;">🐱</div>
+          <div style="margin-top:12px;font-size:15px;font-weight:600;color:var(--text2);">Ожидайте, подключение...</div>
+          <div id="videoRetry" style="display:none;margin-top:16px;text-align:center;">
+            <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">Что-то пошло не так</div>
+            <button class="btn btn-primary btn-sm" onclick="location.reload()">Перезагрузить</button>
+          </div>
+        </div>
+        <video id="remoteVideo" autoplay playsinline tabindex="0" style="cursor:none" style="cursor:none"
+  onmousemove="(function(){if(typeof dataChannel==='undefined'||!dataChannel||dataChannel.readyState!=='open'){this.style.cursor='default';return}this.style.cursor='none';var n=Date.now();if(n-(this._t||0)<16)return;this._t=n;var r=this.getBoundingClientRect(),vw=this.videoWidth||r.width,vh=this.videoHeight||r.height,s=Math.min(r.width/vw,r.height/vh),dw=vw*s,dh=vh*s,ox=(r.width-dw)/2,oy=(r.height-dh)/2,x=Math.max(0,Math.min(1,(event.clientX-r.left-ox)/dw)),y=Math.max(0,Math.min(1,(event.clientY-r.top-oy)/dh));sendInputEvent('mouse-move',{x:x,y:y})}).call(this)"
+  onmousedown="(function(){if(event.button!==0)return;event.preventDefault();if(!dataChannel||dataChannel.readyState!=='open')return;var r=this.getBoundingClientRect(),vw=this.videoWidth||r.width,vh=this.videoHeight||r.height,s=Math.min(r.width/vw,r.height/vh),dw=vw*s,dh=vh*s,ox=(r.width-dw)/2,oy=(r.height-dh)/2,x=Math.max(0,Math.min(1,(event.clientX-r.left-ox)/dw)),y=Math.max(0,Math.min(1,(event.clientY-r.top-oy)/dh));sendInputEvent('mouse-move',{x:x,y:y});sendInputEvent('mouse-down',{button:'left'})}).call(this)"
+  onmouseup="(function(){if(event.button!==0)return;event.preventDefault();if(!dataChannel||dataChannel.readyState!=='open')return;sendInputEvent('mouse-up',{button:'left'})}).call(this)"
+  onwheel="event.preventDefault();if(!dataChannel||dataChannel.readyState!=='open')return;sendInputEvent('mouse-wheel',{delta:-event.deltaY})"
+  oncontextmenu="event.preventDefault();if(!dataChannel||dataChannel.readyState!=='open')return;(function(){var r=this.getBoundingClientRect(),vw=this.videoWidth||r.width,vh=this.videoHeight||r.height,s=Math.min(r.width/vw,r.height/vh),dw=vw*s,dh=vh*s,ox=(r.width-dw)/2,oy=(r.height-dh)/2,x=Math.max(0,Math.min(1,(event.clientX-r.left-ox)/dw)),y=Math.max(0,Math.min(1,(event.clientY-r.top-oy)/dh));sendInputEvent('mouse-move',{x:x,y:y})}).call(this);sendInputEvent('mouse-click-right',{button:'right'})"></video>
+
+        <div class="control-panel" id="controlPanel">
+          <button class="ctrl-btn" id="ctrlMouseLeft" title="Левый клик"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 3v18l2-2h5l2-2h2L8 3z"/></svg></button>
+          <button class="ctrl-btn" id="ctrlMouseRight" title="Правый клик"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3v18l-2-2H9l-2-2h12L16 3z"/></svg></button>
+          <button class="ctrl-btn" id="ctrlChat" title="Чат (PRO)" title="Чат"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button>
+          <button class="ctrl-btn" id="ctrlFile" title="Передать файл (PRO)" style="display:none"> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></button><button class="ctrl-btn" id="ctrlFullscreen" title="На весь экран"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+          <button class="ctrl-btn ctrl-danger" id="ctrlDisconnect" title="Отключиться"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+
+
+        <div class="stream-label" id="viewStatus">Подключено</div>
+      </div>
+    </main>
+
+    <!-- Request overlay -->
+    <div id="requestOverlay" class="settings-overlay hidden">
+      <div class="settings-panel" style="width: 360px; text-align: center;">
+        <div class="settings-header"><span>Запрос на подключение</span></div>
+        <div class="settings-body">
+          <p style="font-size:14px; color: var(--text-secondary); margin-bottom: 4px;">Устройство запрашивает доступ</p>
+          <p style="font-size:24px; font-weight:700; margin-bottom: 20px;" id="requestIdDisplay">------</p>
+          <div style="display:flex; gap:8px;">
+<button id="requestReject" class="btn btn-danger-outline" style="flex:1" onclick="document.getElementById('requestOverlay').classList.add('hidden');sendSignaling({type:'connect-response',room:roomCode,accept:false})">Отклонить</button>
+<button id="requestAccept" class="btn btn-primary" style="flex:1" onclick="window.acceptConnection()">Разрешить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings overlay -->
+    <div id="settingsOverlay" class="settings-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+      <div class="settings-panel settings-full">
+        <div class="settings-header"><span>Настройки</span><button class="btn-close" id="settingsClose" onclick="document.getElementById('settingsOverlay').classList.add('hidden')">&times;</button></div>
+        <div class="settings-tabs">
+          <button class="settings-tab active" onclick="switchSettingsTab('tab-app', this)">Приложение</button>
+          <button class="settings-tab" onclick="switchSettingsTab('tab-security', this)">Безопасность</button>
+          <button class="settings-tab" onclick="switchSettingsTab('tab-about', this)">О программе</button>
+          <button class="settings-tab" onclick="switchSettingsTab('tab-account', this)">Аккаунт</button>
+        </div>
+        <div class="settings-body">
+          <!-- Tab: App -->
+          <div class="settings-tab-content active" id="tab-app">
+            <div class="settings-section-title">Интерфейс</div>
+            <div class="settings-group">
+              <label class="settings-label">Язык</label>
+              <select class="settings-input" id="settingsLanguage" onchange="applyLanguage(this.value)">
+                <option value="ru">Русский</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <div class="settings-section-title">Разное</div>
+            <div class="settings-group">
+              <label class="settings-check"><input type="checkbox" id="settingsCloseToTray" checked> Закрывать в трей</label>
+              <label class="settings-check"><input type="checkbox" id="settingsAutoStart" checked> Автозапуск при старте Windows</label>
+              <label class="settings-check"><input type="checkbox" id="settingsKeyCombo"> Передавать сочетания клавиш</label>
+            </div>
+            <div class="settings-section-title">История чата</div>
+            <div class="settings-group">
+              <select class="settings-input"><option>Отключено</option><option>Путь по умолчанию</option></select>
+            </div>
+            <div class="settings-section-title">Сервер</div>
+            <div class="settings-group">
+              <input type="text" id="settingsServerUrl" class="settings-input" placeholder="ws://server:3000">
+              <button id="settingsSaveServer" class="btn btn-outline btn-sm" onclick="var u=document.getElementById('settingsServerUrl').value.trim();if(u&&typeof SIGNALING_URL!=='undefined'){SIGNALING_URL=u}document.getElementById('settingsOverlay').classList.add('hidden')">Сохранить</button>
+            </div>
+          </div>
+          <!-- Tab: Security -->
+          <div class="settings-tab-content" id="tab-security">
+            <div class="settings-section-title">Доступ</div>
+            <div class="settings-group">
+              <label class="settings-label">Пароль на подключение</label>
+              <input type="password" id="settingsDefaultPass" class="settings-input" placeholder="Оставьте пустым, чтобы не спрашивать" maxlength="20">
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Уровень доступа по умолчанию</label>
+              <select class="settings-input" id="settingsDefaultAccess">
+                <option value="full">Полный доступ</option>
+                <option value="view">Только просмотр</option>
+              </select>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Видимость онлайн-статуса</label>
+              <label class="settings-check"><input type="checkbox" id="settingsOnlineStatus" checked> Показывать онлайн-статус</label>
+            </div>
+          </div>
+          <!-- Tab: About -->
+          <div class="settings-tab-content" id="tab-about">
+            <div class="settings-section-title">О программе</div>
+            <div class="settings-group">
+              <label class="settings-label">Версия</label>
+              <span class="settings-value" id="aboutVersion">1.0.15</span>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Статус обновлений</label>
+              <span class="settings-value" id="aboutUpdateStatus" style="color:var(--text2)">—</span>
+              <div class="update-progress hidden" id="aboutProgressBar"></div>
+            </div>
+            <div class="settings-group">
+              <button id="aboutCheckUpdates" class="btn btn-primary btn-sm" onclick="var s=document.getElementById('aboutUpdateStatus');if(!s)return;s.textContent='Проверяем...';window.electronAPI.checkForUpdates().then(function(r){if(r.ok){if(r.version){s.innerHTML='Доступна <b>'+r.version+'</b> <a href=\''+(r.url||'https://catdesk.ru')+'\' target=_blank style=margin-left:8px;color:var(--purple)>Скачать</a>'}else{s.textContent='Актуальная версия'}}else{s.textContent='Ошибка'}}).catch(function(){s.textContent='Ошибка'})">Проверить обновления</button>
+            </div>
+            <div class="settings-section-title">Сведения</div>
+            <div class="settings-group">
+              <span class="settings-value" style="font-size:12px;color:var(--text3)">
+                Российский удалённый рабочий стол.<br>
+                Шифрование ГОСТ 28147-89.<br>
+                © 2025 CatDesk
+              </span>
+            </div>
+          </div>
+          <!-- Tab: Account -->
+          <div class="settings-tab-content" id="tab-account">
+            <div id="accountLoggedOut">
+              <div class="settings-section-title">Вход в аккаунт</div>
+              <div class="settings-group" style="gap:14px">
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <label class="settings-label">Email</label>
+                  <input type="email" id="accountEmail" class="settings-input" placeholder="email@example.com">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <label class="settings-label">Пароль</label>
+                  <input type="password" id="accountPassword" class="settings-input" placeholder="Не менее 6 символов">
+                </div>
+                <button id="accountLogin" class="btn btn-primary" style="width:100%">Войти</button>
+                <span id="accountError" style="font-size:12px;color:var(--danger);display:none"></span>
+              </div>
+              <div class="settings-section-title" style="margin-top:8px">Нет аккаунта?</div>
+              <div class="settings-group">
+                <button class="btn btn-outline btn-sm" onclick="window.electronAPI.openExternal('https://catdesk.ru/register.php')">Зарегистрироваться на сайте</button>
+              </div>
+            </div>
+            <div id="accountLoggedIn" style="display:none">
+              <div class="settings-section-title">Профиль</div>
+              <div class="settings-group" style="gap:10px">
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <label class="settings-label">Имя</label>
+                  <span class="settings-value" id="accountName" style="font-size:15px;font-weight:700">—</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <label class="settings-label">Email</label>
+                  <span class="settings-value" id="accountEmailShow" style="color:var(--text2)">—</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <label class="settings-label">Тариф</label>
+                  <span class="settings-value" id="accountPlan" style="color:var(--purple);font-weight:600">—</span>
+                </div>
+                <button id="accountLogout" class="btn btn-danger-outline btn-sm">Выйти</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div><input type="file" id="fileInput" style="display:none" multiple></div>
+
+    <!-- Login success overlay -->
+    <div id="loginSuccessOverlay" class="settings-overlay hidden">
+      <div class="settings-panel" style="width:320px;text-align:center;">
+        <div class="settings-body" style="gap:16px">
+          <div style="font-size:64px">✅</div>
+          <div style="font-size:20px;font-weight:700;color:var(--green)">Вы успешно вошли!</div>
+          <div style="font-size:13px;color:var(--text2)">Перезапуск программы...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invite popup (send) -->
+    <div id="inviteOverlay" class="settings-overlay hidden">
+      <div class="settings-panel" style="width:360px;text-align:center;">
+        <div class="settings-header"><span>Пригласить к управлению</span><button class="btn-close" onclick="document.getElementById('inviteOverlay').classList.add('hidden')">&times;</button></div>
+        <div class="settings-body">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:8px">Введите кэт-ID кому отправить приглашение</p>
+          <input type="text" id="inviteTargetId" class="settings-input" placeholder="Кэт-ID" maxlength="6" inputmode="numeric" style="text-align:center;font-size:20px;letter-spacing:3px">
+          <button id="inviteSend" class="btn btn-primary" style="width:100%;margin-top:8px">Отправить приглашение</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invite received dialog -->
+    <div id="inviteReceivedOverlay" class="settings-overlay hidden">
+      <div class="settings-panel" style="width:360px;text-align:center;">
+        <div class="settings-header"><span>Входящее приглашение</span></div>
+        <div class="settings-body">
+          <p style="font-size:14px;color:var(--text2);margin-bottom:4px">Пользователь приглашает вас</p>
+          <p id="inviteFromId" style="font-size:28px;font-weight:800;margin-bottom:16px;"></p>
+          <div style="display:flex;gap:8px">
+            <button id="inviteReject" class="btn btn-danger-outline" style="flex:1">Отклонить</button>
+            <button id="inviteAccept" class="btn btn-primary" style="flex:1">Принять</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global chat panel -->
+    <div class="chat-panel hidden" id="chatPanel">
+      <div class="chat-header"><span>Чат</span><button class="btn-close" id="chatClose">&times;</button></div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-wrap"><input type="text" class="chat-input" id="chatInput" placeholder="Сообщение..." maxlength="500"><button class="btn-send" id="chatSend"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>
+    </div>
+
+    <!-- Host session bar -->
+    <div id="hostSessionBar" class="host-session-bar hidden">
+      <span class="session-dot"></span>
+      <span>Идёт сеанс</span>
+      <button onclick="toggleChat()" style="margin-left:12px;padding:5px 14px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;">💬 Чат</button>
+      <button onclick="if(signalingSocket&&signalingSocket.readyState===WebSocket.OPEN)sendSignaling({type:'leave',room:roomCode});disconnect()" style="margin-left:6px;padding:5px 14px;border:1px solid rgba(239,68,68,0.3);border-radius:8px;background:transparent;color:#ef4444;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;">Завершить</button>
+    </div>
+  </div>
+  <script src="renderer.js"></script>
+<script>
+// Hide splash after 2.5s
+setTimeout(function() {
+  var s = document.getElementById('splashOverlay');
+  if (s) { s.style.opacity = '0'; setTimeout(function() { s.remove(); }, 500); }
+}, 2500);
+
+var sendInputEvent = function(type, data) {
+  if (dataChannel && dataChannel.readyState === 'open') {
+    var payload = JSON.stringify({ type: type, data: data });
+    if (typeof gostReady !== 'undefined' && gostReady && typeof gostKey !== 'undefined' && gostKey) {
+      var encrypted = window.electronAPI.gost.encrypt(gostKey, payload);
+      dataChannel.send(JSON.stringify({ type: 'gost-encrypted', iv: encrypted.iv, data: encrypted.data }));
+    } else {
+      dataChannel.send(payload);
+    }
+  }
+};
+document.addEventListener('keydown', function(e) {
+  if (!dataChannel || dataChannel.readyState !== 'open') return;
+  var ae = document.activeElement;
+  if (!ae || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT') return;
+  e.preventDefault(); e.stopPropagation();
+  sendInputEvent('key-down', { vk: e.keyCode, key: e.key, code: e.code });
+});
+document.addEventListener('keyup', function(e) {
+  if (!dataChannel || dataChannel.readyState !== 'open') return;
+  var ae = document.activeElement;
+  if (!ae || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT') return;
+  e.preventDefault(); e.stopPropagation();
+  sendInputEvent('key-up', { vk: e.keyCode, key: e.key, code: e.code });
+});
+</script>
+</body>
+</html>

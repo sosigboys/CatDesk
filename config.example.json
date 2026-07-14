@@ -1,0 +1,9 @@
+{
+  "signalingUrl": "ws://localhost:3000",
+  "rtcConfig": {
+    "iceServers": []
+  },
+  "reconnectDelay": 3000,
+  "maxReconnectAttempts": 5,
+  "updateServer": ""
+}
