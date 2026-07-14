@@ -1,6 +1,8 @@
-# 🐱 CatDesk — Remote Desktop Application
+# 🐱 CatDesk — Remote Desktop Application / Удалённый рабочий стол
 
 **Full-stack remote desktop solution** with custom signaling server, WebRTC P2P video, GOST encryption, and subscription management. Built from scratch as a commercial product for the Russian market.
+
+**Полноценный удалённый рабочий стол** с собственным сигналинг-сервером, P2P-видео через WebRTC, ГОСТ-шифрованием и системой подписок. Разработан с нуля как коммерческий продукт для российского рынка.
 
 ![Version](https://img.shields.io/badge/version-1.0.25-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
@@ -171,3 +173,90 @@ This project is proprietary software. All rights reserved.
 ---
 
 **Built with ❤️ for the Russian market. No time limits, no foreign servers.**
+
+---
+
+## 🇷🇺 Русский / Russian
+
+### О проекте
+
+CatDesk — это удалённый рабочий стол, созданный для российского рынка. В отличие от AnyDesk и TeamViewer, которые ввели ограничения для пользователей из РФ, CatDesk предлагает:
+
+- **Без лимита времени** — сессии не обрываются через 2 часа
+- **Своя инфраструктура** — сервер на российском VPS, данные не покидают страну
+- **ГОСТ-шифрование** — ГОСТ 28147-89 (CryptoPro S-box, режим CTR) для всех команд ввода
+- **Отечественное ПО** — готовность к сертификации ФСТЭК и включению в реестр Минцифры
+
+### Технологический стек
+
+| Слой | Технология |
+|------|-----------|
+| Десктоп | Electron 33, vanilla JS (~1000 строк) |
+| Интерфейс | HTML5, CSS3 (тёмная тема, Inter, свой дизайн) |
+| Видео | WebRTC (RTCPeerConnection), H.264/VP8 |
+| Шифрование | ГОСТ 28147-89 (чистый JS, 200 строк) |
+| Ввод | PowerShell + Win32 API (SendInput, SetCursorPos) |
+| Сигналинг | Node.js + WebSocket (systemd-сервис) |
+| STUN/TURN | coturn (порт 3478) |
+| Бэкенд | PHP 8 + MySQL (catdesk.ru) |
+| Сайт | Vanilla JS, PHP, MySQL |
+| Сборка | electron-builder, NSIS-установщик |
+
+### Бизнес-модель
+
+| Тариф | Цена | Возможности |
+|-------|------|------------|
+| Бесплатный | 0 ₽ | Удалённый доступ, управление, текстовый чат |
+| Pro | 300 ₽/мес | Чат с историей, передача файлов, 3 сеанса |
+| Corporate | 900 ₽/мес | Всё включено, админ-панель, on-premise сервер |
+
+### Основные возможности
+
+- 🔴 **Чёрный экран побеждён** — после недели отладки найдена причина (GPU-кэш в установленной версии)
+- 📎 **P2P передача файлов** — через WebRTC DataChannel, без нагрузки на сервер
+- 💬 **Чат в сессии** — шифрованный, с историей для Pro
+- 🔐 **Пароль на вход** — авто-подключение при совпадении
+- 🖥️ **Сплэш-заставка** — кот бегает за клубком ниток
+- 📊 **Админ-панель** — управление пользователями и тарифами
+- 🔄 **Автообновление** — проверка версии и установка из приложения
+- 📋 **Системный трей** — сворачивание в трей, автозапуск с Windows
+
+### Архитектура
+
+```
+┌──────────────────────┐     WebSocket      ┌──────────────────────┐
+│   CatDesk Client     │ ◄───────────────► │  Сигналинг-сервер    │
+│   (Electron)         │                    │  (Node.js + ws)      │
+│                      │                    │  VPS РФ              │
+│  Рендерер: WebRTC    │                    │  Порт 3000           │
+│  Главный: IPC + PS   │                    └──────────────────────┘
+└──────────────────────┘                             ▲
+         │                                           │
+         │  P2P (WebRTC DataChannel)     ┌──────────┴──────────┐
+         │  Видео + Ввод + Чат + Файлы   │  STUN/TURN (coturn) │
+         └───────────────────────────────┤  Порт 3478          │
+                                         └─────────────────────┘
+```
+
+### Установка и запуск
+
+```bash
+# Разработка
+cd remote-desktop
+npm install
+npm start
+
+# Продакшен-сборка
+npm run build:nsis   # Windows .exe
+npm run build:linux  # Linux .rpm/.AppImage
+```
+
+### Ссылки
+
+- 🌐 Сайт: [catdesk.ru](https://catdesk.ru)
+- 📦 Скачать: [CatDesk-Setup.exe](https://catdesk.ru/CatDesk-Setup.exe)
+- 👨‍💻 Автор: [github.com/sosigboys](https://github.com/sosigboys)
+
+---
+
+**Сделано с ❤️ для российского рынка. Без лимитов, без зарубежных серверов.**
